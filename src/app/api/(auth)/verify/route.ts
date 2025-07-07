@@ -4,18 +4,18 @@ import { connectDb } from "../../route";
 
 export async function POST(request: Request) {
   const { name, otp } = await request.json();
-  console.log("Received Name:", name);
-  console.log("Received OTP:", otp);
+  // console.log("Received Name:", name);
+  // console.log("Received OTP:", otp);
   
   try {
     await connectDb();
     
     const decodedusername = decodeURIComponent(name);
-    console.log("Decoded Username:", decodedusername);
+    // console.log("Decoded Username:", decodedusername);
     
 
     const user = await User.findOne({ name: decodedusername });
-    console.log("User found:", user ? "Yes" : "No");
+    // console.log("User found:", user ? "Yes" : "No");
     
     if (!user) {
       return Response.json({
