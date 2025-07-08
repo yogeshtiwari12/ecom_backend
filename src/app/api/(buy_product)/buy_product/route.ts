@@ -8,7 +8,6 @@ export async function POST(request: Request) {
     await connectDb()
     const body = await request.json();
     const {
-      user,
       product_name,
       user_product_description,
       user_product_price,
@@ -44,7 +43,7 @@ export async function POST(request: Request) {
         user_product_price: user_product_price,
         user_product_category: user_product_category,
         user_cart_count: user_cart_count,
-        userid: iSsessionActive?.user?._id, // Assuming user ID is available in session
+        userid: iSsessionActive?.user?._id, 
       });
 
       await userProduct.save();

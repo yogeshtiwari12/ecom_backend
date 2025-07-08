@@ -48,7 +48,7 @@ const BuyProductPage = () => {
 
   return (
     <div className="max-w-md mx-auto mt-10 bg-white p-6 rounded-xl shadow-md space-y-5">
-      <h2 className="text-2xl font-bold text-center">Buy Product</h2>
+      <h2 className="text-2xl font-bold text-center">For Testing </h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {[

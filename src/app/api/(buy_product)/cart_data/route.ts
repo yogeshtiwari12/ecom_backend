@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth/next";
 import { ProductModel } from "../../model/user_product";
 import connectDb from "../../route";
 import { authOptions } from "../../(auth)/auth/[...nextauth]/options";
-import { ApiResponse } from "../../component/apiresponse";
+
 
 export async function GET(request: Request) {
   
@@ -13,8 +13,14 @@ export async function GET(request: Request) {
   if (!iSsessionActive) {
     return new Response(JSON.stringify({ error:`Server Session Error ${iSsessionActive}`}), { status: 401 });
   }
-  const data  = await ProductModel.find({ userid: iSsessionActive?.user?.id }).lean();
+  const data = await ProductModel.find({
+    $and: [
+      { userid: iSsessionActive?.user?._id },
+      { iscancelled: false }
+    ]
+  });
 
+  
   if(!data){
     return Response.json(
       { message: "No products found for this user", success: false },
