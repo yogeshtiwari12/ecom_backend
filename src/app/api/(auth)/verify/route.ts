@@ -4,18 +4,13 @@ import { connectDb } from "../../route";
 
 export async function POST(request: Request) {
   const { name, otp } = await request.json();
-  // console.log("Received Name:", name);
-  // console.log("Received OTP:", otp);
   
   try {
     await connectDb();
     
     const decodedusername = decodeURIComponent(name);
-    // console.log("Decoded Username:", decodedusername);
     
-
     const user = await User.findOne({ name: decodedusername });
-    // console.log("User found:", user ? "Yes" : "No");
     
     if (!user) {
       return Response.json({
@@ -24,13 +19,11 @@ export async function POST(request: Request) {
       });
     }
     
-
-    
     const isCodeValid = user.otp === otp;
     const isNotExpired = new Date(user.verifyCodeExpiry) > new Date(); 
     
-    console.log("OTP matches:", isCodeValid);
-    console.log("OTP not expired:", isNotExpired);
+    // console.log("matches:", isCodeValid);
+    // console.log("OTP not expired:", isNotExpired);
     
     if (isCodeValid && isNotExpired) {
       user.isVerified = true;

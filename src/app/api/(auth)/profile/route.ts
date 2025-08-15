@@ -1,6 +1,7 @@
 import { getAuthSession } from "@/lib/auth";
 import connectDb from "../../route";
 import { ProductModel } from "../../model/user_product";
+import { User } from "../../model/userModel";
 
 export async function GET(request: Request) {
   try {
@@ -14,14 +15,13 @@ export async function GET(request: Request) {
         { status: 401 }
       );
     }
-    const user_shop_data = await ProductModel.find(session.user.id)
-
-    console.log("User profile data:", user_shop_data,session.user);
+    const userprofile = await User.findById(session.user._id).select("-password -verifyCodeExpiry -role -otp  ");
+    const user_shop_data = await ProductModel.find({ userid: session.user._id });
     return Response.json(
       {
         message: "Profile retrieved successfully",
         success: true,
-        user: session.user,
+        user: userprofile,
         user_shop_data: user_shop_data,
       },
       { status: 200 }

@@ -7,7 +7,7 @@ import { User } from "@/app/api/model/userModel";
 
 
 export const authOptions: NextAuthOptions = {
-  debug: true, // Enable debug logs for troubleshooting
+
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -17,8 +17,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials:any):Promise<any> {
         if (!credentials?.email || !credentials?.password) {
-          console.log("Missing credentials");
-          return null;
+          throw new Error("Email and password are required");
         }
         
         try {
@@ -28,10 +27,10 @@ export const authOptions: NextAuthOptions = {
             $or: [{ email: credentials.email }, { name: credentials?.name }],
             isVerified: true,
           });
+          console.log(user);
           
           if (!user) {
-            console.log("User not found");
-            return null;
+            throw new Error("User not found ");
           }
 
           const passwordMatch = await bcrypt.compare(
@@ -40,16 +39,13 @@ export const authOptions: NextAuthOptions = {
           );
 
           if (!passwordMatch) {
-            console.log("Invalid password");
-            return null;
+            throw new Error("Invalid email or password");
           }
 
-
-          return user
+          return user;
 
         } catch (error) {
-          console.error("Auth error:", error instanceof Error ? error.message : "Unknown error");
-          return null;
+          throw error;
         }
       },
     }),

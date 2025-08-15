@@ -11,12 +11,17 @@ export async function GET(request: Request) {
   await connectDb();
   const iSsessionActive = await getServerSession(authOptions);
   if (!iSsessionActive) {
-    return new Response(JSON.stringify({ error:`Server Session Error ${iSsessionActive}`}), { status: 401 });
+    return Response.json({
+      message: "Authentication required",
+      success: false,
+      status: 401,
+    });
   }
+  console.log("Session Active:", iSsessionActive.user._id);
   const data = await ProductModel.find({
     $and: [
       { userid: iSsessionActive?.user?._id },
-      { iscancelled: false }
+      { cartItem: true }
     ]
   });
 

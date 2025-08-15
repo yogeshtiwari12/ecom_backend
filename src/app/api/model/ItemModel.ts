@@ -37,7 +37,15 @@ export const itemSchema : Schema<Item> = new Schema({
         }
     },
     imageUrl: {
-        type: String,
+        public_id:{
+            type: String,
+            required: true
+        },
+        url: {
+            type: String,
+            required: true
+        },
+        // required: true
    
     },
     stock: {

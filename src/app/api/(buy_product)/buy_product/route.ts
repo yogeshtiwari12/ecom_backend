@@ -14,6 +14,7 @@ export async function POST(request: Request) {
       user_product_category,
       user_product_item_id,
       user_cart_count,
+      user_product_imageUrl
     } = body;
 
      if (
@@ -29,29 +30,33 @@ export async function POST(request: Request) {
       );
     }
 
-    const iSsessionActive = await getServerSession(authOptions);
-    if (!iSsessionActive) {
-      return new Response(
-        JSON.stringify({ error: `Server Session Error ${iSsessionActive}` }),
-        { status: 401 }
-      );
-    } else {
+    // const iSsessionActive = await getServerSession(authOptions);
+    // if (!iSsessionActive) {
+    //   return new Response(
+    //     JSON.stringify({ error: `Server Session Error ${iSsessionActive}` }),
+    //     { status: 401 }
+    //   );
+    // }
       const userProduct = new ProductModel({
-      
         product_name: product_name,
         user_product_description: user_product_description,
         user_product_price: user_product_price,
         user_product_category: user_product_category,
         user_cart_count: user_cart_count,
-        userid: iSsessionActive?.user?._id, 
+        // userid: iSsessionActive?.user?._id, 
+        user_product_imageUrl: user_product_imageUrl,
+        user_product_item_id: user_product_item_id,
       });
 
+      userProduct.isOrderConfirmbyUser = true
+
       await userProduct.save();
-    }
+    
     return new Response(
       JSON.stringify({ message: "Product added successfully", product: body }),
       { status: 201 }
     );
+  // }
   } catch (error) {
     return new Response(
       JSON.stringify({
