@@ -20,10 +20,10 @@ export async function POST(
       );
     }
 
-    const updatedProduct = await ProductModel.findByIdAndUpdate(pid, data, {
+    const updatedProduct = await ItemModel.findByIdAndUpdate(pid, data, {
       new: true,
     });
-    console.log("Updated Product:", updatedProduct, data);
+    
     if (!updatedProduct) {
       return Response.json(
         { message: "Product not found", success: false },

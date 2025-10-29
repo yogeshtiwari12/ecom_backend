@@ -10,7 +10,6 @@ import { AlertCircle, Package, ShoppingCart, Heart, Star, Eye, Zap } from 'lucid
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { addcart_data, getproduct_data } from "../redux/product";
 import { AppDispatch } from '../redux/store';
-import { setProductId } from "../redux/product"; 
 import { toast } from "sonner";
 
 function ProductPage() {
@@ -233,7 +232,7 @@ function ProductPage() {
                       <>
                         <button 
                           className="w-full py-3 px-4 rounded-md font-semibold text-sm transition-transform duration-600 transform hover:scale-x-105 bg-gray-200 hover:from-purple-500 hover:to-blue-500 text-black shadow-md flex items-center justify-center gap-2 border border-purple-500/30"
-                          onClick={() => {addcart(product._id)} }
+                          onClick={() => {addcart(product.id)} }
                         >
                           <ShoppingCart className="w-4 h-4" />
                           Add to Cart

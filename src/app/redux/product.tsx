@@ -2,12 +2,70 @@ import { createAsyncThunk,createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
 
 
+
+export const user_delivery_update = createAsyncThunk(
+    "product/user_delivery_update", async ({ orderId, product_delivery_status }: { orderId: string; product_delivery_status: string }) => {
+        try {
+            const response = await axios.post(`api/user_delivery_update/${orderId}`, { product_delivery_status }, {
+                withCredentials: true,
+            });
+            if (response.status === 200) {
+                return response.data;
+            }
+        } catch (error) {
+            console.error("Error updating delivery status:", error);
+            throw new Error("Failed to update delivery status");    
+        }
+    }
+);
+
+
+export const cancel_order_otp_send = createAsyncThunk(
+    "api/cancel_order_otp_send", async (id: string) => {
+        try {
+            const response = await axios.post(`api/cancel_order_otp_send/${id}`, {}, {
+                withCredentials: true,
+            });
+            if (response.status === 200) {
+                console.log(response.data);
+                return response.data;
+            }
+        } catch (error) {
+            console.error("Error sending OTP:", error);
+            throw new Error("Failed to send OTP");
+        }
+    }
+);
+export const cancel_order_verify_otp = createAsyncThunk(
+    "api/cancel_order_verify_otp", async (otp: string, { rejectWithValue }) => {
+        try {   
+            const response = await axios.post(`api/cancel_order_verify_otp`, { cancel_order_otp: otp }, {
+                withCredentials: true,
+            });
+            if (response.status === 200) {
+                return response.data;
+            } else {
+                return rejectWithValue(response.data);
+            }
+        } catch (error: any) {
+            if (error.response && error.response.data) {
+                return rejectWithValue(error.response.data);
+            }
+            console.error("Error verifying OTP:", error);
+            return rejectWithValue({ success: false, message: "Failed to verify OTP" });
+        }
+    }
+);
+
+
+
 export const users_with_prod_details = createAsyncThunk(
     "product/users_with_prod_details", async () => {
         try {
             const response = await axios.get("api/users_with_prod_details", {
                 withCredentials: true,
             });
+            console.log("Response:", response);
             if (response.status === 200) {
                 return response.data;
             }
@@ -50,6 +108,8 @@ export const cancel_order = createAsyncThunk(
         }
     }
 );
+
+
 
 export const increase_cart_count = createAsyncThunk(
     "product/increase_cart_count", async (id: string) => {
@@ -142,6 +202,7 @@ const productSlice = createSlice({
         error: null as string | null,
         cartdata: [],
         productId: null as string | null,
+        successmessage: null as string | null,
 
     
     },
@@ -245,6 +306,33 @@ const productSlice = createSlice({
                 state.loading = false;
                 state.error = action.error.message ?? "Failed to fetch users with product details";
             })
+
+
+            .addCase(cancel_order_otp_send.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(cancel_order_otp_send.fulfilled, (state, action) => {
+                state.loading = false;
+                state.successmessage = action.payload;
+            })
+            .addCase(cancel_order_otp_send.rejected, (state, action) => {
+                state.loading = false;
+                state.error = (action.payload && (action.payload as any).message) || action.error.message || "Failed to send cancel order OTP";
+            })
+            .addCase(cancel_order_verify_otp.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(cancel_order_verify_otp.fulfilled, (state, action) => {
+                state.loading = false;  
+                state.successmessage = action.payload;
+            })
+            .addCase(cancel_order_verify_otp.rejected, (state, action) => {
+                state.loading = false;  
+                state.error = (action.payload && (action.payload as any).message) || action.error.message || "Failed to verify cancel order OTP";
+            })
+
     },
 
 })

@@ -1,32 +1,35 @@
-import { ProductModel } from "../../model/user_product";
-import { User } from "../../model/userModel";
+import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
-    const users = await User.find();
+    const users = await prisma.user.findMany();
 
-    const userProducts = await ProductModel.find({
-        userid: { $in: users.map(user => user._id) }
+    const userProducts = await prisma.userProduct.findMany({
+        where: {
+            userId: { in: users.map((user) => user.id) }
+        }
     });
 
-    const matchedData = users.map(user => {
-        const products = userProducts.filter(product => product.userid.toString() === user._id.toString())
-        .map(product => ({
-                productname: product.product_name,
-                productprice: product.user_product_price,
-                productaddress: product.adress,
-                productdeliverystatus: product.product_delivery_status
-            }));
+    const matchedData = users.map((user) => {
+        const products = userProducts.filter((product) => product.userId && product.userId.toString() === user.id.toString())
+        .map((product) => ({
+            id: product.id,
+            productname: product.product_name,
+            productprice: product.user_product_price,
+            productaddress: product.address,
+            productdeliverystatus: product.product_delivery_status,
+            productId: product.productId
+        }));
 
         return {
             username: user.name,
-            userphone: user.phoneno,
+            userphone: user.phone,
             products
         };
     });
 
-    return Response.json({
+    return new Response(JSON.stringify({
         success: true,
         data: matchedData,
         message: "User products fetched successfully"
-    });
+    }));
 }

@@ -1,41 +1,51 @@
 import { getServerSession } from "next-auth";
-import { ItemModel } from "../../../model/ItemModel";
-import { ProductModel } from "../../../model/user_product";
-import connectDb from "../../../route";
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { connectDb } from "../../../route";
 import { authOptions } from "@/app/api/(auth)/auth/[...nextauth]/options";
 
-export async function POST(  request: Request,
-  context: { params: Promise<{ pid: string }> }
+export async function POST(
+  request: Request,
+  { params }: { params: { pid: string } }
 ) {
     try {
         await connectDb();
-        const {pid} = await context.params;
+        const { pid } = params;
+        console.log("Removing product with ID:", pid);
 
-        const isSessionActive = await getServerSession(authOptions);
-        if (!isSessionActive) {
-           throw new Error("Authentication required");
+        const session = await getServerSession(authOptions);
+        if (!session || !session.user?.id) {
+            return NextResponse.json({
+                message: "Authentication required",
+                success: false,
+                status: 401
+            });
         }
         
-const remove_update_data = await ProductModel.findByIdAndDelete(pid);
-if (!remove_update_data) {
-    throw new Error("Product not found");
-}
+        // Try to delete the item using Prisma
+        try {
+            const remove_update_data = await prisma.userProduct.delete({
+                where: {
+                    id: pid
+                }
+            });
+            
+            console.log("Successfully removed product:", remove_update_data);
+        } catch (err) {
+            // If the product cannot be found by ID, log error
+            console.error("Error deleting product:", err);
+            throw new Error("Product not found or could not be deleted");
+        }
 
-   remove_update_data.save();
-
-        return Response.json({
-            message:"Product removed from cart successfully",
-            success:true,
+        return NextResponse.json({
+            message: "Product removed from cart successfully",
+            success: true,
             status: 200
         });
-    }
-
-
-
-    catch (error) {
-        console.error("Error updating product:", error);
-        return Response.json(
-            { message: "Failed to update product", error: (error as Error).message, success: false },
+    } catch (error) {
+        console.error("Error removing product:", error);
+        return NextResponse.json(
+            { message: "Failed to remove product", error: (error as Error).message, success: false },
             { status: 500 }
         );
     }

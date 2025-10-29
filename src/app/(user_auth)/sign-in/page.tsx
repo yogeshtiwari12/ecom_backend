@@ -17,7 +17,7 @@ import { signIn } from "next-auth/react";
 import { toast } from "sonner";
 
 const SignInPage = () => {
-  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [formData, setFormData] = useState({ email: "codekro8@gmail.com", password: "12345678" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 

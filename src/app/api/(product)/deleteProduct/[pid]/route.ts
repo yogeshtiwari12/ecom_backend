@@ -1,5 +1,7 @@
 import { connectDb } from "../../../route";
 import { ItemModel } from "../../../model/ItemModel";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/(auth)/auth/[...nextauth]/options";
 
 export async function DELETE(request: Request,
   context: { params: Promise<{ pid: string }> }
@@ -14,6 +16,14 @@ export async function DELETE(request: Request,
                 message: "Product ID is required",
                 success: false
             }, { status: 400 });
+        }
+
+        const sesseion = await getServerSession(authOptions);
+        if (!sesseion) {
+            return Response.json({
+                message: "Unauthorized",
+                success: false
+            }, { status: 401 });
         }
           const deletedProduct = await ItemModel.findByIdAndDelete(pid, { lean: true });
      
@@ -40,3 +50,4 @@ export async function DELETE(request: Request,
         }, { status: 500 });
     }   
 }
+

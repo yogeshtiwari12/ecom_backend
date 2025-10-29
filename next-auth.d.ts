@@ -1,25 +1,28 @@
-import { Interface } from "readline";
+import { DefaultSession } from "next-auth";
 
 declare module "next-auth" {
   interface User {
-    _id: string;
-    isverified: boolean;
+    id: string;
+    isVerified: boolean;
     name: string;
+    role: string;
   }
 
   interface Session {
     user: {
-      _id?: string;
-      isverified: boolean;
+      id?: string;
+      isVerified: boolean;
       name: string;
+      role: string;
     } & DefaultSession["user"];
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    _id?: string;
+    id?: string;
     name: string;
+    role: string;
   }
 }
 

@@ -2,7 +2,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../../(auth)/auth/[...nextauth]/options";
 import { User } from "../../model/userModel";
 import { ProductModel } from "../../model/user_product";
-import { connect } from "http2";
 import connectDb from "../../route";
 
 

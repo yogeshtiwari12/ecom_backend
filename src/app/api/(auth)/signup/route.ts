@@ -1,20 +1,19 @@
 import { connectDb } from "../../route";
-
 import { sendVerificationEmail } from "../../component/verifyemail";
-
 import bcrypt from "bcryptjs";
-import { User } from "../../model/userModel";
-
+import { prisma } from "@/lib/prisma";
 export async function POST(request: Request) {
   try {
     await connectDb();
-    const { name, email, password,role } = await request.json();
+    const { name, email, password, role } = await request.json();
 
-    const isVerifiedUserAlreadyExists = await User.findOne({
-      $or: [{ email }, { name }],
-      isVerified: true,
+    const isVerifiedUserAlreadyExists = await prisma.user.findFirst({
+      where: {
+        OR: [{ email }, { name }],
+        isVerified: true,
+      }
     });
-
+  
     const verifycode = Math.floor(100000 + Math.random() * 900000).toString();
 
     if (isVerifiedUserAlreadyExists) {
@@ -25,47 +24,51 @@ export async function POST(request: Request) {
         });
       } else {
         const haspass = await bcrypt.hash(password, 10);
-        isVerifiedUserAlreadyExists.password = haspass;
-        isVerifiedUserAlreadyExists.otp = verifycode;
-        isVerifiedUserAlreadyExists.verifyCodeExpiry = new Date(
-          Date.now() + 3600000
-        );
-
-        await isVerifiedUserAlreadyExists.save();
+        await prisma.user.update({
+          where: { id: isVerifiedUserAlreadyExists.id },
+          data: {
+            password: haspass,
+            otp: verifycode,
+            verifyCodeExpiry: new Date(Date.now() + 3600000),
+          },
+        });
       }
     } else {
       const haspass = await bcrypt.hash(password, 10);
       const expiryTime = new Date();
       expiryTime.setHours(expiryTime.getHours() + 1);
 
-      const newUser = new User({
-        name,
-        email,
-        otp: verifycode,
-        password: haspass,
-        verifyCodeExpiry: expiryTime,
-        role
+    await prisma.user.create({
+        data: {
+          name,
+          email,
+          otp: verifycode,
+          password: haspass,  
+          verifyCodeExpiry: expiryTime,
+          role
+        },
       });
-      await newUser.save();
 
+    }
+    
+    const sendverificationemial = await sendVerificationEmail(
+      name,
+      verifycode,
+      email
+    );
 
-      const sendverificationemial = await sendVerificationEmail(
-        name,
-        verifycode,
-        email
-      );
-
-      if (!sendverificationemial.success) {
-        return Response.json({
-          success: false,
-          message: "Error sending verification email",
-        });
-      }
+    if (!sendverificationemial.success) {
       return Response.json({
-        message: "User created successfully Please Check your email for verification",
-        success: true,
+        success: false,
+        message: "Error sending verification email",
       });
     }
+    
+    return Response.json({
+      message: "User created successfully Please Check your email for verification",
+      success: true,
+    });
+    
   } catch (error) {
     console.log(error);
     return Response.json({ message: "Internal Server Error", success: false });

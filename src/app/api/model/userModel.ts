@@ -10,6 +10,7 @@ export interface User extends Document {
     verifyCodeExpiry: Date;
     otp: string;
     phoneno: string;
+    employeeId?: string;
 }
 
 const userSchema: Schema<User> = new Schema({
@@ -28,7 +29,7 @@ const userSchema: Schema<User> = new Schema({
     role: {
         type: String,
         default: "user",
-        enum: ["user", "admin"],
+        enum: ["user", "admin", "delivery_agent"],
     },
     isVerified: {
         type: Boolean,
@@ -50,7 +51,12 @@ const userSchema: Schema<User> = new Schema({
         type: String,
         required: false,
         default: null
-    }
+    },
+    employeeId: {
+        type: String,
+        required: false,
+        default: null
+    },
 }, {
     timestamps: true,
     versionKey: false

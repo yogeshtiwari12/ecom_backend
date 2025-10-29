@@ -25,6 +25,8 @@ const Navbar = () => {
     setIsLoggedIn(session?.user ? true : false);
   }, [session]);
 
+  console.log("Session Data:", session);
+  
 
 const router = useRouter();
 
@@ -80,13 +82,23 @@ const router = useRouter();
                 >
                   Logout
                 </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => {window.location.href = "/profile"}}
-                  className="px-4 py-2 bg-slate-200 hover:bg-purple-700"
-                >
-                  Profile
-                </Button>
+                {session?.user?.role === "delivery_agent" || session?.user?.role === "admin" ? (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {window.location.href = session?.user?.role === "admin" ? "/admin_dashboard" : "/delivery_dashboard"}}
+                    className="px-4 py-2 bg-slate-200 hover:bg-purple-700"
+                  >
+                    Dashboard
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    onClick={() => {window.location.href = "/profile"}}
+                    className="px-4 py-2 bg-slate-200 hover:bg-purple-700"
+                  >
+                    Profile
+                  </Button>
+                )}
               </div>
             ) : (
               <Button
@@ -135,16 +147,29 @@ const router = useRouter();
                         >
                           Logout
                         </Button>
-                        <Button
-                          variant="secondary"
-                          onClick={() => {
-                            window.location.href = "/profile";
-                            setIsOpen(false);
-                          }}
-                          className="w-full"
-                        >
-                          Profile
-                        </Button>
+                        {session?.user?.role === "delivery_agent" || session?.user?.role === "admin" ? (
+                          <Button
+                            variant="secondary"
+                            onClick={() => {
+                              window.location.href = session?.user?.role === "admin" ? "/admin_dashboard" : "/delivery_dashboard";
+                              setIsOpen(false);
+                            }}
+                            className="w-full"
+                          >
+                            Dashboard
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            onClick={() => {
+                              window.location.href = "/profile";
+                              setIsOpen(false);
+                            }}
+                            className="w-full"
+                          >
+                            Profile
+                          </Button>
+                        )}
                       </>
                     ) : (
                       <Button

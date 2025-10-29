@@ -7,8 +7,6 @@ interface UserProduct extends Document {
   user_product_description: string;
   user_product_price: number;
   user_product_category: string;
-  createdAt: Date;
-  updatedAt: Date;
   user_product_item_id: string;
   user_cart_count?: number;
   userid?: string;
@@ -17,10 +15,14 @@ interface UserProduct extends Document {
   isOrderConfirmbyUser?: boolean;
   cartItem?: boolean;
   productId: string;
+  cancel_order_otp?: string;
   address: {
     type: string,
     default: null
   },
+  createdAt: Date;
+  updatedAt: Date;
+  
   product_delivery_status: {
     type: String;
     enum: ["pending", "shipped", "delivered"];
@@ -34,6 +36,7 @@ const productSchema = new Schema<UserProduct>(
     user_product_description: { type: String, required: true },
     user_product_price: { type: Number, required: true },
     user_product_category: { type: String, required: true },
+    cancel_order_otp: { type: String, default: null },
 
     user_cart_count: { type: Number, default: 1 },
     userid: {
@@ -49,7 +52,7 @@ const productSchema = new Schema<UserProduct>(
 
     product_delivery_status: {
       type: String,
-      enum: ["pending", "shipped", "delivered"],
+      enum: ["pending", "picked up", "delivered","in transit","cancelled"],
       default: "pending",
     },
     address: {

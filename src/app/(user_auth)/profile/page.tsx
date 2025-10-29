@@ -29,6 +29,7 @@ import { cancel_order, increase_cart_count, removecart_data, update_address } fr
 import { useDispatch } from "react-redux";
 import { AppDispatch } from "@/app/redux/store";
 import { toast } from "sonner";
+import { itemSchema } from "@/app/api/model/ItemModel";
 
 
 const ProfilePage = () => {
@@ -45,22 +46,27 @@ const ProfilePage = () => {
   const [editingAddressOrderId, setEditingAddressOrderId] = useState<string | null>(null);
   const [addressInput, setAddressInput] = useState("");
 
-  const removecart = async (productid: string) => {
-    setRemovingItems(prev => new Set(prev).add(productid));
-    
+  const removecart = async (productId: string) => {
+
+    setRemovingItems(prev => new Set(prev).add(productId));
+    console.log("items ", removingItems)
+
     try {
+      // Update local state optimistically
       setProfileData((prevData: any) => {
         if (!prevData?.user_shop_data) return prevData;
-        
+
         return {
           ...prevData,
-          user_shop_data: prevData.user_shop_data.filter((item: any) => item._id !== productid)
+          user_shop_data: prevData.user_shop_data.filter((item: any) => item.id !== productId || item._id !== productId)
         };
       });
+      console.log("Product ID to remove:", productId)
 
-      const result = await dispatch(removecart_data(productid));
+      const result = await dispatch(removecart_data(productId));
+      console.log("Product removed with ID:", productId)
 
-      if(result.payload.success) {
+      if (result.payload.success) {
         toast.success(result.payload.message);
       } else {
         toast.error(result.payload.message);
@@ -69,33 +75,37 @@ const ProfilePage = () => {
     } catch (error) {
       console.error("Error removing product:", error);
       toast.error("Failed to remove product. Please try again.");
-      
+
       await fetchProfile();
     } finally {
       setRemovingItems(prev => {
         const newSet = new Set(prev);
-        newSet.delete(productid);
+        newSet.delete(productId);
         return newSet;
+
       });
     }
   };
 
-  const increaseCartCount = async (productid: string) => {
+  const increaseCartCount = async (productId: string) => {
     try {
-      const onsuccess  =  await dispatch(increase_cart_count(productid));
-      if(onsuccess.payload.success) {
+      console.log("Increasing quantity for product ID:", productId);
+
+      const onsuccess = await dispatch(increase_cart_count(productId));
+      if (onsuccess.payload.success) {
         toast.success(onsuccess.payload.message);
+        await fetchProfile();
       } else {
         toast.error(onsuccess.payload.message);
       }
+    }
+    catch (error) {
+      console.error("Error increasing cart count:", error);
+      toast.error("Failed to increase cart count. Please try again.");
+    }
 
   }
-     catch (error) {
-      toast.error("Failed to increase cart count. Please try again.");
-     }
 
-}
-   
   const { confirmedOrders, totalItems, totalRevenue } = useMemo(() => {
     if (!profileData?.user_shop_data) {
       return {
@@ -152,7 +162,10 @@ const ProfilePage = () => {
 
   const fetchProfile = async () => {
     try {
-      const response = await axios.get("/api/profile");
+      const response = await axios.get("/api/profile", {
+        withCredentials: true,
+      });
+      console.log(response.data)
 
       if (response.status !== 200) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -160,7 +173,7 @@ const ProfilePage = () => {
 
       console.log("Response data:", response.data);
 
-      if(response.data.success) {
+      if (response.data.success) {
         setProfileData(response.data);
         setLoading(false);
       } else {
@@ -296,11 +309,10 @@ const ProfilePage = () => {
                       Phone Number
                     </label>
                     <p
-                      className={`text-lg font-medium ${
-                        profileData.user.phoneno
+                      className={`text-lg font-medium ${profileData.user.phoneno
                           ? "text-slate-200"
                           : "text-amber-400"
-                      }`}
+                        }`}
                     >
                       {profileData.user.phoneno || "Not provided"}
                     </p>
@@ -315,11 +327,10 @@ const ProfilePage = () => {
                     </label>
                     <div className="flex items-center gap-2">
                       <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium border ${
-                          profileData.user.isVerified
+                        className={`px-3 py-1 rounded-full text-sm font-medium border ${profileData.user.isVerified
                             ? "bg-emerald-600/20 text-emerald-400 border-emerald-500/50"
                             : "bg-amber-600/20 text-amber-400 border-amber-500/50"
-                        }`}
+                          }`}
                       >
                         {profileData.user.isVerified
                           ? "✓ Verified Account"
@@ -339,103 +350,144 @@ const ProfilePage = () => {
   const renderCarts = () => (
     <div className="space-y-6">
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {profileData.user_shop_data&& 
-          profileData.user_shop_data.map((product: any, index: any) => (
+        {profileData.user_shop_data &&
+          profileData.user_shop_data.map((product: any) => {
+            // More accurate color combos for delivery status
+            let statusColor = "text-slate-400";
+            let statusBg = "bg-slate-800/50";
+            let statusLabel = product.product_delivery_status || "Unknown";
+            const status = statusLabel.toLowerCase();
 
-            <div
-              key={product._id}
-              className={`flex flex-col bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl border border-purple-700/50 rounded-2xl shadow-2xl overflow-hidden hover:shadow-purple-500/10 transition-all duration-300 ${
-                removingItems.has(product._id) ? 'opacity-50 scale-95 pointer-events-none' : ''
-              }`}
-            >
-              <div className="flex-1 flex flex-col h-full">
-                <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-2xl flex-1 flex flex-col">
-                  <div className="p-6 flex-1 flex flex-col">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 text-sm border border-slate-700 rounded-xl flex items-center justify-center text-white font-bold">
-                          {product.product_name?.charAt(0).toUpperCase() || "P"}
-                        </div>
-                        <div>
-                          <h3 className="text-md font-bold text-slate-200 capitalize">
-                            {product.product_name}
-                          </h3>
-                          <span className="inline-block bg-purple-600/20 text-purple-400 border border-purple-500/50 capitalize mt-1 px-2 py-1 rounded-full text-xs">
-                            {product.user_product_category}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-emerald-500">
-                          ₹{product.user_product_price}
-                        </p>
-                        <p className="text-sm text-slate-400">per unit</p>
-                      </div>
-                    </div>
+            if (status === "delivered") {
+              statusColor = "text-green-600";
+              statusBg = "bg-green-100/10 border-green-400/40";
+              statusLabel = "Delivered";
+            } else if (status === "shipped") {
+              statusColor = "text-yellow-500";
+              statusBg = "bg-yellow-100/10 border-yellow-400/40";
+              statusLabel = "Shipped";
+            } else if (status === "pending") {
+              statusColor = "text-blue-500";
+              statusBg = "bg-blue-100/10 border-blue-400/40";
+              statusLabel = "Pending";
+            } else if (status === "cancelled" || status === "canceled") {
+              statusColor = "text-red-500";
+              statusBg = "bg-red-100/10 border-red-400/40";
+              statusLabel = "Cancelled";
+            }
 
-                    <div className="grid grid-cols-1 gap-3 mb-4">
-                      <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50 flex items-center gap-3">
-                        <Package className="h-5 w-5 text-purple-400" />
-                        <div>
-                          <p className="text-xs text-slate-400">Quantity</p>
-                          <p className="text-base font-semibold text-slate-200">
-                            {product.user_cart_count} items
+            return (
+              <div
+                key={product.id || product._id}
+                className={`flex flex-col bg-gradient-to-br from-slate-800 to-slate-900 backdrop-blur-xl border border-purple-700/50 rounded-2xl shadow-2xl overflow-hidden hover:shadow-purple-500/10 transition-all duration-300 ${removingItems.has(product.id || product._id) ? 'opacity-50 scale-95 pointer-events-none' : ''}`}
+              >
+                <div className="flex-1 flex flex-col h-full">
+                  <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 rounded-2xl flex-1 flex flex-col">
+                    <div className="p-6 flex-1 flex flex-col">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 text-sm border border-slate-700 rounded-xl flex items-center justify-center text-white font-bold">
+                            {product.product_name?.charAt(0).toUpperCase() || "P"}
+                          </div>
+                          <div>
+                            <h3 className="text-md font-bold text-slate-200 capitalize">
+                              {product.product_name}
+                            </h3>
+                            <span className="inline-block bg-purple-600/20 text-purple-400 border border-purple-500/50 capitalize mt-1 px-2 py-1 rounded-full text-xs">
+                              {product.user_product_category}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xl font-bold text-emerald-500">
+                            ₹{product.user_product_price}
                           </p>
+                          <p className="text-sm text-slate-400">per unit</p>
                         </div>
                       </div>
-                      <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50 flex items-center gap-3">
-                        <DollarSign className="h-5 w-5 text-emerald-400" />
-                        <div>
-                          <p className="text-xs text-slate-400">Total Value</p>
-                          <p className="text-base font-semibold text-emerald-400">
-                            ₹
-                            {product.user_product_price *
-                              product.user_cart_count}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50 flex items-center gap-3">
-                        <Clock className="h-5 w-5 text-slate-400" />
-                        <div>
-                          <p className="text-xs text-slate-400">Created</p>
-                          <p className="text-xs font-medium text-slate-200">
-                            {formatDate(product.createdAt)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
 
-                    <div className="flex gap-2 mt-auto">
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="flex-1 bg-purple-700/80  hover:bg-purple-700 transition-all duration-200"
-                        onClick={() => removecart(product._id)}
-                        disabled={removingItems.has(product._id)}
-                      >
-                        {removingItems.has(product._id) ? "Removing..." : "Remove"}
-                      </Button>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="flex-1 bg-slate-600/80 text-slate-200 hover:bg-slate-600 transition-all duration-200"
-                        onClick={() =>
-                          increaseCartCount(product._id)
-                        }
-                      >
-                        Add More
-                      </Button>
+                      <div className="grid grid-cols-1 gap-3 mb-4">
+                        <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50 flex items-center gap-3">
+                          <Package className="h-5 w-5 text-purple-400" />
+                          <div>
+                            <p className="text-xs text-slate-400">Quantity</p>
+                            <p className="text-base font-semibold text-slate-200">
+                              {product.user_product_cart_count} items
+                            </p>
+                          </div>
+                        </div>
+                        <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50 flex items-center gap-3">
+                          <DollarSign className="h-5 w-5 text-emerald-400" />
+                          <div>
+                            <p className="text-xs text-slate-400">Total Value</p>
+                            {(() => {
+                          const price = Number(product.user_product_price);
+                          const qty = Number(product.user_product_cart_count);
+                          const total = price * qty;
+                          return Number.isFinite(total) ? (
+                            <p className="text-base font-semibold text-emerald-400">
+                            ₹{total.toLocaleString()}
+                            </p>
+                          ) : (
+                            <p className="text-base font-semibold text-red-400">
+                            NaN
+                            </p>
+                          );
+                          })()}
+                          </div>
+                        </div>
+                        <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/50 flex items-center gap-3">
+                          <Clock className="h-5 w-5 text-slate-400" />
+                          <div>
+                            <p className="text-xs text-slate-400">Created</p>
+                            <p className="text-xs font-medium text-slate-200">
+                              {formatDate(product.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className={`rounded-xl p-3 flex items-center gap-3 border ${statusBg}`}>
+                          <Truck className={`h-5 w-5 ${statusColor}`} />
+                          <div>
+                            <p className="text-xs text-slate-400">Delivery Status</p>
+                            <span className={`text-base font-semibold px-3 py-1 rounded-full ${statusColor} ${statusBg}`}>
+                              {statusLabel}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 mt-auto">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="flex-1 bg-purple-700/80  hover:bg-purple-700 transition-all duration-200"
+                          onClick={() => removecart(product.id || product._id)}
+                          disabled={removingItems.has(product.id || product._id)}
+                        >
+                          {removingItems.has(product.id || product._id) ? "Removing..." : "Remove"}
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="flex-1 bg-slate-600/80 text-slate-200 hover:bg-slate-600 transition-all duration-200"
+                          onClick={() =>
+                            increaseCartCount(product.id || product._id)
+                          }
+                        >
+                          Add More
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
       </div>
     </div>
   );
 
-const orders = () => {
+  const orders = () => {
     const formatDate = (dateString: any) => {
       try {
         return new Date(dateString).toLocaleDateString("en-US", {
@@ -462,22 +514,22 @@ const orders = () => {
       return { status: "pending", color: "text-blue-400", icon: Clock };
     };
 
-    const handleRemoveOrder =async (orderId: any) => {
+    const handleRemoveOrder = async (orderId: any) => {
       try {
-        
+
         if (window.confirm("Are you sure you want to remove this order?")) {
-           const responseData  = await dispatch(cancel_order(orderId));
-           if(responseData.payload.success) {
+          const responseData = await dispatch(cancel_order(orderId));
+          if (responseData.payload.success) {
             toast.success(responseData.payload.message);
+          }
+          else {
+            toast.error(responseData.payload.message);
+          }
         }
-        else{
-          toast.error(responseData.payload.message);
-        }
+      } catch (error) {
+        toast.error("Failed to remove order");
       }
-    } catch (error) {
-      toast.error("Failed to remove order");
-    }
-  };
+    };
 
     const handleUpdateAddress = (orderId: string, deliveryAddress?: string) => {
       setEditingAddressOrderId(orderId);
@@ -486,12 +538,12 @@ const orders = () => {
 
     const handleAddressSubmit = async (orderId: string) => {
 
-      const data  = await dispatch(update_address({ orderId, address: addressInput }));
-      
-      if(data.payload.success){
+      const data = await dispatch(update_address({ orderId, address: addressInput }));
+
+      if (data.payload.success) {
         toast.success(data.payload.message);
       }
-      else{
+      else {
         toast.error(data.payload.message);
       }
       setEditingAddressOrderId(null);
@@ -606,13 +658,12 @@ const orders = () => {
                       <div className="relative py-4">
                         <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-700 transform -translate-y-1/2"></div>
                         <div
-                          className={`absolute top-1/2 left-0 h-0.5 transform -translate-y-1/2 transition-all duration-500 ${
-                            product.isdelivered
+                          className={`absolute top-1/2 left-0 h-0.5 transform -translate-y-1/2 transition-all duration-500 ${product.isdelivered
                               ? "bg-green-500 w-full"
                               : product.isshipped
-                              ? "bg-amber-500 w-2/3"
-                              : "bg-blue-500 w-1/3"
-                          }`}
+                                ? "bg-amber-500 w-2/3"
+                                : "bg-blue-500 w-1/3"
+                            }`}
                         ></div>
 
                         <div className="flex items-center justify-between relative">
@@ -625,18 +676,16 @@ const orders = () => {
 
                           <div className="relative flex flex-col items-center">
                             <div
-                              className={`w-3 h-3 rounded-full border-2 border-slate-800 z-10 transition-colors duration-300 ${
-                                product.isshipped
+                              className={`w-3 h-3 rounded-full border-2 border-slate-800 z-10 transition-colors duration-300 ${product.isshipped
                                   ? "bg-amber-500"
                                   : "bg-slate-600"
-                              }`}
+                                }`}
                             ></div>
                             <span
-                              className={`text-xs mt-2 absolute top-full whitespace-nowrap transition-colors duration-300 ${
-                                product.isshipped
+                              className={`text-xs mt-2 absolute top-full whitespace-nowrap transition-colors duration-300 ${product.isshipped
                                   ? "text-amber-400"
                                   : "text-slate-500"
-                              }`}
+                                }`}
                             >
                               Shipped
                             </span>
@@ -644,18 +693,16 @@ const orders = () => {
 
                           <div className="relative flex flex-col items-center">
                             <div
-                              className={`w-3 h-3 rounded-full border-2 border-slate-800 z-10 transition-colors duration-300 ${
-                                product.isdelivered
+                              className={`w-3 h-3 rounded-full border-2 border-slate-800 z-10 transition-colors duration-300 ${product.isdelivered
                                   ? "bg-green-500"
                                   : "bg-slate-600"
-                              }`}
+                                }`}
                             ></div>
                             <span
-                              className={`text-xs mt-2 absolute top-full whitespace-nowrap transition-colors duration-300 ${
-                                product.isdelivered
+                              className={`text-xs mt-2 absolute top-full whitespace-nowrap transition-colors duration-300 ${product.isdelivered
                                   ? "text-green-400"
                                   : "text-slate-500"
-                              }`}
+                                }`}
                             >
                               Delivered
                             </span>
@@ -810,11 +857,10 @@ const orders = () => {
               return (
                 <button
                   key={item.id}
-                  className={`w-full border border-slate-700/50 justify-start gap-4 h-auto p-4 text-left transition-all duration-200 rounded-lg ${
-                    activeTab === item.id
+                  className={`w-full border border-slate-700/50 justify-start gap-4 h-auto p-4 text-left transition-all duration-200 rounded-lg ${activeTab === item.id
                       ? "bg-gradient-to-r from-purple-600/20 to-pink-600/20 text-purple-400 border-purple-500/50 shadow-lg"
                       : "text-slate-300 hover:bg-slate-700/50 hover:text-purple-400 hover:translate-x-1"
-                  }`}
+                    }`}
                   onClick={() => setActiveTab(item.id)}
                 >
                   <div className="flex items-start gap-4">

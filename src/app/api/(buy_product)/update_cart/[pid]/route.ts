@@ -1,35 +1,27 @@
-import { ItemModel } from "@/app/api/model/ItemModel";
-import { connectDb } from "@/app/api/route";
-import { ProductModel } from "../../../model/user_product";
+
+import { prisma } from "@/lib/prisma";
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ pid: string }> }
 ) {
-  try {
-    await connectDb();
 
+  try {
     const { pid } = await context.params;
 
+
     const data = await request.json();
-
-    if (!pid) {
-      return Response.json(
-        { message: "Product ID is required", success: false },
-        { status: 400 }
-      );
-    }
-
-    const updatedProduct = await ProductModel.findByIdAndUpdate(pid, data, {
-      new: true,
+    const updatedProduct = await prisma.userProduct.update({
+      where: { id:pid },
+      data,
     });
-    console.log("Updated Product:", updatedProduct);
     if (!updatedProduct) {
       return Response.json(
         { message: "Product not found", success: false },
         { status: 404 }
       );
     }
+    
 
     return Response.json(
       {
@@ -39,7 +31,8 @@ export async function POST(
       },
       { status: 200 }
     );
-  } catch (error) {
+  }
+   catch (error) {
     console.error("Error updating product:", error);
     return Response.json(
       {
